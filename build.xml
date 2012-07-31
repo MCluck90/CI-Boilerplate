@@ -1,0 +1,129 @@
+<!-- Change the project name to your project name -->
+<project name="Boilerplate" default="cleanup">
+	<property name="compressors_dir" location="${basedir}/compressors" />
+	<property name="js_dir" location="${basedir}/js" />
+	<property name="css_dir" location="${basedir}/css" />
+	<property name="compress_version" value="0.1.4" />
+	<property name="deploy_dir" value="${basedir}/deploy" />
+	<property name="deploy_js" value="${deploy_dir}/js" />
+	<property name="deploy_css" value="${deploy_dir}/css" />
+	
+	<target name="concat_file">
+		<!-- Concatenate all of the JS files -->
+		<!-- Handles dependencies by looking for '@depends' in a multi line comment -->
+		<exec dir="${compressors_dir}" executable="cmd">
+			<arg line='/C java -jar combiner-0.0.2.jar -v -b "${js_dir}" -s -r -o "${js_dir}/all.uncompressed.js" \*.js' />
+		</exec>
+		
+		<echo>JS files concatenated.</echo>
+
+		<!-- Concatenate all of the CSS files -->
+		<!-- Handles dependencies by looking for '@depends' in a multi line comment -->
+		<exec dir="${compressors_dir}" executable="cmd">
+			<arg line='/C java -jar combiner-0.0.2.jar -v -b "${css_dir}" -s -r -o "${css_dir}/style.uncompressed.css" \*.css' />
+		</exec>
+		
+		<echo>CSS files concatenated.</echo>
+	</target>
+	
+	<target name="version" depends="concat_file">
+		<replace file="${js_dir}\all.uncompressed.js" token="__version__" value="${compress_version}" />
+		
+		<echo>'__version__' set in the all.min.js file.</echo>
+				
+		<replace file="${css_dir}\style.uncompressed.css" token="__version__" value="${compress_version}" />
+				
+		<echo>'__version__' set in the style.min.css file.</echo>
+	</target>
+	
+	<target name="pack" depends="version">
+		<exec dir="${compressors_dir}" executable="cmd">
+			<arg line="/C java -jar yuicompressor.jar -v --type js -o '${js_dir}\all.min.js' '${js_dir}\all.uncompressed.js'" />
+		</exec>
+		
+		<echo>File all.uncompressed.js packed in to all.min.js.</echo>
+		
+		<exec dir="${compressors_dir}" executable="cmd">
+			<arg line="/C java -jar yuicompressor.jar -v --type css -o '${css_dir}\style.min.css' '${css_dir}\style.uncompressed.css'" />
+		</exec>
+		
+		<echo>File style.uncompressed.css packed in to style.min.css.</echo>
+	</target>
+	
+	<target name="deploy" depends="pack">
+		<echo>Creating folder structure...</echo>
+		<mkdir dir="${deploy_dir}" />
+		<mkdir dir="${deploy_dir}/system" />
+		<mkdir dir="${deploy_dir}/application" />
+		<mkdir dir="${deploy_dir}/media" />
+		<mkdir dir="${deploy_css}" />
+		<mkdir dir="${deploy_css}/images" />
+		<mkdir dir="${deploy_js}" />
+		
+		<copy file="${basedir}/index.php" todir="${deploy_dir}" overwrite="true" />
+		<echo>Copied index.php for use with CodeIgniter.</echo>
+		
+		<copy file="${basedir}/license.txt" todir="${deploy_dir}" overwrite="true" />
+		<echo>Copied CodeIgniter license.</echo>
+		
+		<copy file="${basedir}/.htaccess" todir="${deploy_dir}" overwrite="true" />
+		<echo>Copied .htaccess file.</echo>
+		<echo>NOTE: .htaccess must be modified to match target folder.</echo>
+		
+		<copy todir="${deploy_dir}/system" overwrite="true">
+			<fileset dir="${basedir}/system" />
+		</copy>
+		<echo>Copied CodeIgniter base system.</echo>
+		
+		<copy todir="${deploy_dir}/application" overwrite="true">
+			<fileset dir="${basedir}/application" />
+		</copy>
+		<echo>Copied CodeIgniter application.</echo>
+		
+		<copy todir="${deploy_dir}/media" overwrite="true">
+			<fileset dir="${basedir}/media" />
+		</copy>
+		<echo>Copied all media.</echo>
+		
+		<copy todir="${deploy_css}/images" overwrite="true">
+			<fileset dir="${css_dir}/images" />
+		</copy>
+		<echo>Copied CSS images.</echo>
+		
+		<copy file="${js_dir}/all.min.js" todir="${deploy_js}" overwrite="true" />
+		<echo>Copied minified JS.</echo>
+		
+		<copy file="${css_dir}/style.min.css" todir="${deploy_css}" overwrite="true" />
+		<echo>Copied minified CSS.</echo>
+	</target>
+	
+	<target name="replace_tags" depends="deploy">
+		<replaceregexp file="${deploy_dir}/application/views/includes/footer.php"
+					   match="\&lt;!-- start JS scripts --\&gt;(.*?)\&lt;!-- end JS scripts --\&gt;"
+					   replace="&lt;script src=&quot;js/all.min.js&quot; type=&quot;text/javascript&quot;&gt;&lt;/script&gt;"
+					   flags="gs" />
+		
+		<echo>Replaced script tags.</echo>
+		
+		<replaceregexp file="${deploy_dir}/application/views/includes/header.php"
+					   match="\&lt;!-- start CSS --\&gt;(.*?)\&lt;!-- end CSS --\&gt;"
+					   replace="&lt;link rel=&quot;stylesheet&quot; href=&quot;css/style.min.css&quot; /&gt;"
+					   flags="gs" />
+		
+		<echo>Replace CSS tags.</echo>
+	</target>
+	
+	<target name="cleanup" depends="replace_tags">
+		<delete file="${js_dir}/all.uncompressed.js" />
+		<echo>Deleted all.uncompressed.js.</echo>
+			
+		<delete file="${css_dir}/style.uncompressed.css" />
+		<echo>Deleted style.uncompressed.css.</echo>
+		
+		<delete file="${js_dir}/all.min.js" />
+		<echo>Deleted all.min.js from development project.</echo>
+		
+		<delete file="${css_dir}/style.min.css" />
+		<echo>Deleted style.min.css from development project.</echo>
+	</target>
+</project>
