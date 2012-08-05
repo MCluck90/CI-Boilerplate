@@ -21,7 +21,10 @@
 		
 		<!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
 		
+		<!-- start CSS -->
+		<link rel="stylesheet" href="css/reset.css">
 		<link rel="stylesheet" href="css/style.css">
+		<!-- end CSS -->
 		
 		<!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
 		
